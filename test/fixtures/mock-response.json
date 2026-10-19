@@ -1,0 +1,31 @@
+{
+  "period": "10.18~10.19",
+  "machines": [
+    { "machine": "7", "uncertain": [], "note": "", "lots": [
+      { "lot": "BP1592.02", "qty": 12, "model": "B473", "uncertain": [], "note": "" }
+    ]},
+    { "machine": "8", "uncertain": [], "note": "", "lots": [
+      { "lot": "BE2751", "qty": 11, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE2867", "qty": 13, "model": "B339", "uncertain": [], "note": "" },
+      { "lot": "BE2956.01", "qty": 12, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE2963.01", "qty": 1, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE2956", "qty": 13, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE2752.01", "qty": 12, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE3161", "qty": 13, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE3354", "qty": 7, "model": "B586", "uncertain": ["model"], "note": "型号前有一段被涂黑的作废内容，以右侧重写的 B586 为准" }
+    ]},
+    { "machine": "9", "uncertain": [], "note": "", "lots": [
+      { "lot": "BE3112", "qty": 5, "model": "B342", "uncertain": [], "note": "" },
+      { "lot": "BE3390.02", "qty": 1, "model": "B342", "uncertain": ["lot", "qty"], "note": "小数部分有涂改，可能是 .02 或 .01；片数与涂改处粘连，可能是 1" },
+      { "lot": "BE1917.01", "qty": 12, "model": "B228", "uncertain": [], "note": "" }
+    ]},
+    { "machine": "10", "uncertain": [], "note": "", "lots": [
+      { "lot": "BE2846", "qty": 13, "model": "B339", "uncertain": ["lot"], "note": "第5位数字有改写，可能是 4 或 6" },
+      { "lot": "BE2963.01", "qty": 11, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE3161.01", "qty": 12, "model": "B586", "uncertain": [], "note": "" },
+      { "lot": "BE2970.01", "qty": 4, "model": "B586", "uncertain": [], "note": "" }
+    ]}
+  ],
+  "paper_total": null,
+  "uncertainties": []
+}

@@ -1,0 +1,22 @@
+{
+  "name": "unt-production",
+  "version": "1.0.0",
+  "description": "晶元产能手写记录 AI 识别：标准格式输出、代码验算合计、不确定项人工核对",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "AI_MOCK=1 ADMIN_PASSWORD=admin node --watch server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "express": "^4.22.3",
+    "multer": "^2.4.0",
+    "sharp": "^0.35.5"
+  }
+}

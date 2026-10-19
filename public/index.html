@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNT 产能识别</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand"><span class="logo">UNT</span><span>产能识别</span></div>
+    <div class="status" id="status">…</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1. 记录格式指引 -->
+  <section class="card guide" id="guide">
+    <div class="card-head">
+      <h2><span class="step">1</span>纸笔记录格式</h2>
+      <button class="link" id="toggleGuide" type="button">收起</button>
+    </div>
+    <div class="guide-body">
+      <div class="paper" aria-label="标准写法示例">
+<div class="paper-line date">10.18 6:00 - 10.19 6:00</div>
+<div class="paper-line m">#07</div>
+<div class="paper-line">1. BP1592.02 (12) B473</div>
+<div class="paper-line blank"></div>
+<div class="paper-line m">#08</div>
+<div class="paper-line">1. BE2751 (11) B586</div>
+<div class="paper-line">2. BE2867 (13) B339</div>
+<div class="paper-line">3. BE2956.01 (12) B586</div>
+<div class="paper-line blank"></div>
+<div class="paper-line m">#09</div>
+<div class="paper-line">1. BE3112 (5) B342</div>
+<div class="paper-line">2. BE3390.02 (1)</div>
+      </div>
+      <div class="rules">
+        <ol>
+          <li><b>第一行写时间段</b>：<code>10.18 6:00 - 10.19 6:00</code>，简写 <code>10.18~10.19</code> 也可以。</li>
+          <li><b>机台号单独一行</b>，以 <code>#</code> 开头写两位数：<code>#07</code>、<code>#10</code>。</li>
+          <li><b>每个批次一行</b>：<code>序号. 批次号 (片数) 型号</code>。</li>
+          <li><b>片数一定加括号</b>，括号里只写数字。</li>
+          <li><b>型号可以不写</b>，写的话放在括号后面。</li>
+          <li>每台机写完<b>空一行</b>再写下一台；<b>合计不用写</b>，系统自动验算。</li>
+        </ol>
+        <div class="tips">
+          <div class="tips-title">书写易错点</div>
+          <ul>
+            <li><b>1 和 7</b>：7 横要平、带折角；1 只写一竖。</li>
+            <li><b>0 和 6、4 和 9、5 和 6</b>：一笔一画，不连笔。</li>
+            <li><b>小数点</b>要点实：<code>BE2956.01</code>，不要和逗号、短横混淆。</li>
+            <li><b>写错了</b>：整行划掉重写到下一行，不要在原字上描改。</li>
+            <li><b>拍照</b>：整页入镜、光线充足、手指别挡住字，一页拍一张。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 上传 -->
+  <section class="card">
+    <div class="card-head"><h2><span class="step">2</span>上传记录照片</h2></div>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <div class="drop-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      </div>
+      <div class="drop-text"><b>点击拍照 / 选择图片</b><span>也可以拖拽或粘贴（Ctrl+V），最多 10 张</span></div>
+    </label>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="access" id="accessRow" hidden>
+      <input type="password" id="accessCode" placeholder="请输入访问码" autocomplete="current-password">
+    </div>
+    <button class="primary" id="run" type="button" disabled>开始识别</button>
+    <div class="progress" id="progress" hidden><div class="bar"></div><span id="progressText">AI 正在识别，约需 10–60 秒…</span></div>
+    <div class="error" id="error" hidden></div>
+  </section>
+
+  <!-- 3. 结果 -->
+  <section class="results" id="results" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h2><span class="step">3</span>标准格式文本</h2>
+        <div class="actions">
+          <button class="ghost" id="reset" type="button" title="恢复为 AI 识别的原始结果">还原</button>
+          <button class="copy" id="copy" type="button">一键复制</button>
+        </div>
+      </div>
+      <textarea id="output" spellcheck="false" rows="22"></textarea>
+      <p class="hint">可以直接在上面修改，修改后右侧会自动重新验算。</p>
+    </div>
+
+    <div class="side">
+      <div class="card verify">
+        <div class="card-head"><h2>代码验算</h2></div>
+        <div class="total-row">
+          <div class="total"><span id="total">0</span><small>片</small></div>
+          <div class="total-sub" id="totalSub"></div>
+        </div>
+        <div class="mismatch" id="mismatch" hidden>
+          <span id="mismatchText"></span>
+          <button class="ghost small" id="fixTotal" type="button">修正共计行</button>
+        </div>
+        <table class="sub">
+          <thead><tr><th>机台</th><th>批次数</th><th>小计</th></tr></thead>
+          <tbody id="perMachine"></tbody>
+        </table>
+      </div>
+
+      <div class="card check">
+        <div class="card-head"><h2>待人工核对</h2><span class="badge" id="issueCount">0</span></div>
+        <p class="hint" id="noIssue" hidden>没有发现需要核对的地方，但仍建议对照照片快速过一遍。</p>
+        <ul class="issues" id="issues"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/shared/production.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
