@@ -39,13 +39,21 @@ npm install --omit=dev
 cp .env.example .env
 nano .env        # 至少填写 PORT、ACCESS_CODE、ADMIN_PASSWORD，AI 配置可以之后在后台填
 
-# 4. 用 pm2 常驻运行（开机自启）
-npm install -g pm2
-pm2 start ecosystem.config.js
-pm2 save && pm2 startup
+# 4. 安装为系统服务（开机自启、崩溃自动重启）
+sudo ./install-service.sh
 ```
 
 然后访问 `http://服务器IP:端口`（记得在云服务器安全组/防火墙放行该端口）。
+
+常用命令：
+
+```bash
+systemctl status unt-production      # 查看状态
+journalctl -u unt-production -f      # 实时日志
+sudo systemctl restart unt-production   # 重启（改了 .env 后需要）
+```
+
+也可以用 pm2 代替 systemd：`pm2 start ecosystem.config.js && pm2 save && pm2 startup`，二选一即可。
 
 ### 以后更新
 
