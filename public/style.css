@@ -92,9 +92,8 @@ button { font: inherit; cursor: pointer; }
 .actions { display: flex; gap: 8px; }
 
 .progress { margin-top: 12px; font-size: 14px; color: var(--muted); }
-.progress .bar { height: 4px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; margin-bottom: 6px; position: relative; }
-.progress .bar::after { content: ""; position: absolute; inset: 0; width: 40%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
-@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.progress .bar { height: 4px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; margin-bottom: 6px; }
+.progress .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 .error { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--err-soft); color: var(--err); font-size: 14px; word-break: break-all; }
 
 /* 结果 */
@@ -142,6 +141,40 @@ table.sub th:not(:first-child), table.sub td:not(:first-child) { text-align: rig
   .guide-body, .results { grid-template-columns: 1fr; }
   .total { font-size: 40px; }
 }
+
+/* 识别记录 */
+.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.job-open {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--ink); text-align: left;
+}
+.job-open:hover { border-color: var(--accent); }
+.job.active .job-open { border-color: var(--accent); background: var(--accent-soft); }
+.job-main { display: flex; flex-direction: column; min-width: 0; }
+.job-title { font-family: var(--mono); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-detail { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-detail b { color: var(--ink); font-family: var(--mono); }
+.job-time { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+.chip { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.job.done .chip { background: var(--accent-soft); color: var(--accent); }
+.job.failed .chip { background: var(--err-soft); color: var(--err); }
+.job.queued .chip, .job.processing .chip { background: var(--warn-soft); color: var(--warn); }
+.job.processing .chip::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-right: 5px; vertical-align: 1px; animation: pulse 1s ease-in-out infinite; }
+.warn-text { color: var(--warn); } .err-text { color: var(--err); }
+@keyframes pulse { 50% { opacity: .25; } }
+@media (max-width: 560px) { .job-time { display: none; } }
+
+.job-meta { font-size: 13px; color: var(--muted); margin: -6px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 20px; }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.results.pending textarea { color: var(--muted); min-height: 90px; }
+.results.pending .verify, .results.pending #reset, .results.pending #copy { display: none; }
+.originals { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.originals:empty { display: none; }
+.originals a { position: relative; width: 64px; height: 84px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); display: block; }
+.originals img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.originals span { position: absolute; inset: auto 0 0; font-size: 10px; text-align: center; background: rgba(0,0,0,.55); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .spinner, .job.processing .chip::before { animation: none; } }
 
 /* 后台 */
 .form { display: grid; gap: 14px; }

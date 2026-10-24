@@ -74,9 +74,19 @@
     <div class="access" id="accessRow" hidden>
       <input type="password" id="accessCode" placeholder="请输入访问码" autocomplete="current-password">
     </div>
-    <button class="primary" id="run" type="button" disabled>开始识别</button>
-    <div class="progress" id="progress" hidden><div class="bar"></div><span id="progressText">AI 正在识别，约需 10–60 秒…</span></div>
+    <button class="primary" id="run" type="button" disabled>提交识别</button>
+    <div class="progress" id="progress" hidden><div class="bar"><i id="progressBar"></i></div><span id="progressText">正在上传…</span></div>
     <div class="error" id="error" hidden></div>
+    <p class="hint">提交后在服务器后台识别，<b>上传完成就可以离开页面</b>，回来时结果会自动显示在下方。</p>
+  </section>
+
+  <!-- 识别记录 -->
+  <section class="card" id="historyCard" hidden>
+    <div class="card-head">
+      <h2>识别记录</h2>
+      <button class="link" id="refreshJobs" type="button">刷新</button>
+    </div>
+    <ul class="jobs" id="jobs"></ul>
   </section>
 
   <!-- 3. 结果 -->
@@ -89,8 +99,9 @@
           <button class="copy" id="copy" type="button">一键复制</button>
         </div>
       </div>
+      <div class="job-meta" id="jobMeta"></div>
       <textarea id="output" spellcheck="false" rows="22"></textarea>
-      <p class="hint">可以直接在上面修改，修改后右侧会自动重新验算。</p>
+      <p class="hint">可以直接在上面修改，修改会自动保存在本机，右侧同步重新验算。</p>
     </div>
 
     <div class="side">
@@ -112,6 +123,7 @@
 
       <div class="card check">
         <div class="card-head"><h2>待人工核对</h2><span class="badge" id="issueCount">0</span></div>
+        <div class="originals" id="originals"></div>
         <p class="hint" id="noIssue" hidden>没有发现需要核对的地方，但仍建议对照照片快速过一遍。</p>
         <ul class="issues" id="issues"></ul>
       </div>

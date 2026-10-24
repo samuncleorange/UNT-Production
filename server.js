@@ -9,6 +9,7 @@ const sharp = require('sharp');
 
 const config = require('./lib/config');
 const ai = require('./lib/ai');
+const jobs = require('./lib/jobs');
 const Production = require('./public/shared/production');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -53,7 +54,7 @@ async function prepareImage(file) {
       .jpeg({ quality: 88 }).toBuffer();
     return { mime: 'image/jpeg', buffer };
   } catch (_) {
-    return { mime: file.mimetype, buffer: file.buffer }; // 格式不支持时原样发送
+    throw new Error(`图片「${file.originalname}」格式无法识别，请改用 JPG 或 PNG`);
   }
 }
 
@@ -62,26 +63,54 @@ app.get('/api/status', (_req, res) => {
   res.json({ needAccessCode: !!ACCESS_CODE, aiConfigured: !!cfg.apiKey || process.env.AI_MOCK === '1', model: cfg.model, shiftStart: SHIFT_START });
 });
 
-app.post('/api/recognize', requireAccess, upload.array('images', 10), async (req, res) => {
+async function recognizeImages(images) {
+  const raw = await ai.recognize(config.load(), images);
+  const data = Production.normalize(raw, { shiftStart: SHIFT_START });
+  return {
+    text: Production.format(data),
+    data,
+    totals: Production.computeTotals(data),
+    issues: Production.validate(data),
+  };
+}
+jobs.init(recognizeImages);
+
+// 提交识别任务：保存图片后立即返回任务号，识别在后台进行
+app.post('/api/jobs', requireAccess, upload.array('images', 10), async (req, res) => {
   const files = req.files || [];
   if (!files.length) return res.status(400).json({ error: '请先上传图片' });
-  const started = Date.now();
   try {
     const images = await Promise.all(files.map(prepareImage));
-    const raw = await ai.recognize(config.load(), images);
-    const data = Production.normalize(raw, { shiftStart: SHIFT_START });
-    const totals = Production.computeTotals(data);
-    res.json({
-      text: Production.format(data),
-      data,
-      totals,
-      issues: Production.validate(data),
-      elapsedMs: Date.now() - started,
-    });
+    res.json(jobs.publicJob(jobs.create(images)));
   } catch (e) {
-    console.error('[recognize]', e);
-    res.status(502).json({ error: e.message || String(e) });
+    console.error('[jobs:create]', e);
+    res.status(400).json({ error: e.message });
   }
+});
+
+app.get('/api/jobs', requireAccess, (_req, res) => res.json({ jobs: jobs.list() }));
+
+app.get('/api/jobs/:id', requireAccess, (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: '任务不存在或已过期' });
+  res.json(jobs.publicJob(job));
+});
+
+app.post('/api/jobs/:id/retry', requireAccess, (req, res) => {
+  const job = jobs.retry(req.params.id);
+  if (!job) return res.status(404).json({ error: '任务不存在或已过期' });
+  res.json(jobs.publicJob(job));
+});
+
+// 图片用 <img> 加载，无法带请求头，访问码通过 ?code= 传
+app.get('/api/jobs/:id/images/:n', (req, res, next) => {
+  req.headers['x-access-code'] = req.headers['x-access-code'] || req.query.code || '';
+  next();
+}, requireAccess, (req, res) => {
+  const job = jobs.get(req.params.id);
+  const n = Number(req.params.n);
+  if (!job || !Number.isInteger(n) || n < 0 || n >= job.imageCount) return res.status(404).end();
+  res.set('Cache-Control', 'private, max-age=86400').type('jpeg').sendFile(jobs.imageFile(job.id, n));
 });
 
 // ---- 后台 ----
