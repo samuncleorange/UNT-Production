@@ -12,7 +12,7 @@
       { "lot": "BE2956", "qty": 13, "model": "B586", "uncertain": [], "note": "" },
       { "lot": "BE2752.01", "qty": 12, "model": "B586", "uncertain": [], "note": "" },
       { "lot": "BE3161", "qty": 13, "model": "B586", "uncertain": [], "note": "" },
-      { "lot": "BE3354", "qty": 7, "model": "B586", "uncertain": ["model"], "note": "型号前有一段被涂黑的作废内容，以右侧重写的 B586 为准" }
+      { "lot": "BE3354", "qty": 7, "model": "B586", "uncertain": [], "note": "" }
     ]},
     { "machine": "9", "uncertain": [], "note": "", "lots": [
       { "lot": "BE3112", "qty": 5, "model": "B342", "uncertain": [], "note": "" },

@@ -83,3 +83,37 @@ test('规则校验：片数越界、批次号格式', () => {
 test('从带代码块的 AI 回复中提取 JSON', () => {
   assert.deepStrictEqual(extractJson('好的：\n```json\n{"a":1}\n```'), { a: 1 });
 });
+
+test('按北京时间自动生成统计时间段（6:00 结算）', () => {
+  const at = (iso) => P.shiftPeriod(Date.parse(iso));
+  assert.strictEqual(at('2026-10-25T06:05:00+08:00'), '10.24 6:00 - 10.25 6:00');
+  assert.strictEqual(at('2026-10-25T05:50:00+08:00'), '10.24 6:00 - 10.25 6:00'); // 6 点前几分钟提交也算今天这段
+  assert.strictEqual(at('2026-10-25T17:59:00+08:00'), '10.24 6:00 - 10.25 6:00');
+  assert.strictEqual(at('2026-10-25T18:01:00+08:00'), '10.25 6:00 - 10.26 6:00');
+  assert.strictEqual(at('2026-11-01T07:00:00+08:00'), '10.31 6:00 - 11.1 6:00');   // 跨月
+  assert.strictEqual(at('2027-01-01T06:30:00+08:00'), '12.31 6:00 - 1.1 6:00');    // 跨年
+  assert.strictEqual(at('2026-10-24T22:10:00Z'), '10.24 6:00 - 10.25 6:00');       // 服务器时区无关（UTC 22:10 = 北京 06:10）
+});
+
+test('自动时间段覆盖纸上日期，并给出提示', () => {
+  const data = P.normalize(mock, { period: '10.24 6:00 - 10.25 6:00' });
+  assert.ok(P.format(data).startsWith('10.24 6:00 - 10.25 6:00生产情况：'));
+  const info = P.validate(data).find((i) => i.where === '日期');
+  assert.ok(info && info.level === 'info' && info.msg.includes('10.18 6:00 - 10.19 6:00'));
+  const noPaper = P.normalize({ ...mock, period: '' }, { period: '10.24 6:00 - 10.25 6:00' });
+  assert.ok(!P.validate(noPaper).some((i) => i.where === '日期'));
+});
+
+test('型号照原样保留，不进核对区', () => {
+  const data = P.normalize({ machines: [{ machine: '7', lots: [
+    { lot: 'BE2751', qty: 3, model: 'B319-6', uncertain: ['model'] },
+    { lot: 'BE2752', qty: 4, model: 'b319－8' },
+    { lot: 'BE2753', qty: 5, model: 'B12345' },
+    { lot: 'BE2754', qty: 6 },
+  ] }] }, { period: 'x' });
+  assert.deepStrictEqual(data.machines[0].lots.map((l) => l.model), ['B319-6', 'B319-8', 'B12345', '']);
+  assert.strictEqual(P.validate(data).length, 0);
+  assert.ok(P.format(data).includes('1. BE2751 (3) B319-6'));
+  const back = P.parseText(P.format(data)).data.machines[0].lots.map((l) => l.model);
+  assert.deepStrictEqual(back, ['B319-6', 'B319-8', 'B12345', '']);
+});

@@ -9,10 +9,10 @@
   'use strict';
 
   const LOT_RE = /^[A-Z]{2}\d{4}(\.\d{2})?$/; // 例：BE2751、BE2956.01
-  const MODEL_RE = /^[A-Z]\d{3}$/;            // 例：B586
   const MAX_QTY = 25;                          // 一盒晶元最多 25 片
 
-  const FIELD_NAMES = { lot: '批次号', qty: '片数', model: '型号', machine: '机台号' };
+  // 型号（如 B586、B319-6、B319-8）种类太多，照原样识别，不做格式校验，也不进核对区
+  const FIELD_NAMES = { lot: '批次号', qty: '片数', machine: '机台号' };
 
   /** 全角转半角、去空格、常见 OCR 混淆修正（只做无歧义的修正） */
   function cleanToken(s) {
@@ -20,6 +20,7 @@
     return String(s)
       .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
       .replace(/[。，]/g, '.')
+      .replace(/[‐-―−﹣]/g, '-')
       .replace(/\s+/g, '')
       .toUpperCase();
   }
@@ -48,6 +49,27 @@
     return `${+m[1]}.${m[2]} ${t1} - ${+m[4]}.${m[5]} ${t2}`;
   }
 
+  /**
+   * 按提交时间自动生成统计时间段。
+   * 规则：每天北京时间 6:00 结算「前一天 6:00 - 当天 6:00」的产能。
+   * 以距离最近的 6:00 为结算点（即 18:00 之前提交算当天 6:00 结束的那一段，18:00 之后算第二天的）。
+   */
+  function shiftPeriod(ts, opts) {
+    opts = opts || {};
+    const tz = opts.tz || 'Asia/Shanghai';
+    const start = opts.shiftStart || '6:00';
+    const [h, m] = start.split(/[:：]/).map(Number);
+    const shiftHours = h + (m || 0) / 60;
+    const shifted = new Date((ts ?? Date.now()) + (12 - shiftHours) * 3600e3);
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric' })
+      .formatToParts(shifted).map((p) => [p.type, p.value]));
+    const end = new Date(Date.UTC(+parts.year, +parts.month - 1, +parts.day));
+    const begin = new Date(end.getTime() - 86400e3);
+    const md = (d) => `${d.getUTCMonth() + 1}.${d.getUTCDate()}`;
+    const t = `${h}:${String(m || 0).padStart(2, '0')}`;
+    return `${md(begin)} ${t} - ${md(end)} ${t}`;
+  }
+
   function toInt(q) {
     if (typeof q === 'number' && Number.isFinite(q)) return q;
     const s = cleanToken(q).replace(/[()（）片]/g, '');
@@ -66,7 +88,7 @@
     for (const m of raw.machines || []) {
       const lots = [];
       for (const l of m.lots || []) {
-        const uncertain = Array.isArray(l.uncertain) ? l.uncertain.filter((x) => FIELD_NAMES[x]) : [];
+        const uncertain = Array.isArray(l.uncertain) ? l.uncertain.filter((x) => FIELD_NAMES[x] && x !== 'machine') : [];
         lots.push({
           lot: cleanToken(l.lot),
           qty: toInt(l.qty),
@@ -83,8 +105,11 @@
       });
     }
     const paperTotal = toInt(raw.paper_total ?? raw.paperTotal);
+    const paperPeriod = normPeriod(raw.period, opts.shiftStart);
+    const period = opts.period || paperPeriod;
     return {
-      period: normPeriod(raw.period, opts.shiftStart),
+      period,
+      paperPeriod: opts.period && paperPeriod && paperPeriod !== opts.period ? paperPeriod : '',
       machines,
       paperTotal,
       aiNotes: (raw.uncertainties || raw.aiNotes || []).map(String).filter(Boolean),
@@ -113,7 +138,7 @@
     const seen = new Map();
     const totals = computeTotals(data);
 
-    if (!data.period) issues.push({ level: 'warn', where: '日期', msg: '未识别到统计时间段，请在文本第一行手动补上（如 10.18 6:00 - 10.19 6:00）。' });
+    if (data.paperPeriod) issues.push({ level: 'info', where: '日期', msg: `纸上写的日期是「${data.paperPeriod}」，文本已按提交时间自动填为「${data.period}」。如果是补交以前的记录，请手动修改第一行。` });
     if (!data.machines.length) issues.push({ level: 'error', where: '整体', msg: '没有识别到任何机台，请检查图片是否清晰、是否按格式书写。' });
 
     for (const m of data.machines) {
@@ -135,8 +160,6 @@
 
         if (l.qty === null) issues.push({ level: 'error', where: w, msg: '片数缺失或无法识别为整数，未计入合计。' });
         else if (l.qty <= 0 || l.qty > MAX_QTY) issues.push({ level: 'error', where: w, msg: `片数 ${l.qty} 超出正常范围（1–${MAX_QTY}）。` });
-
-        if (l.model && !MODEL_RE.test(l.model)) issues.push({ level: 'warn', where: w, msg: `型号「${l.model}」格式异常（常见如 B586）。` });
 
         if (l.lot) {
           if (seen.has(l.lot)) issues.push({ level: 'info', where: w, msg: `批次号与 ${seen.get(l.lot)} 重复，请确认是否同一批次分在两台机。` });
@@ -204,5 +227,5 @@
     return { data, statedTotal };
   }
 
-  return { normalize, normPeriod, computeTotals, validate, format, parseText, LOT_RE, MODEL_RE, MAX_QTY };
+  return { normalize, normPeriod, shiftPeriod, computeTotals, validate, format, parseText, LOT_RE, MAX_QTY };
 });

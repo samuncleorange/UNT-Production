@@ -17,6 +17,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 const ACCESS_CODE = process.env.ACCESS_CODE || '';     // 设置后，识别接口需要访问码，防止 API 额度被外人刷
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''; // 设置后才能使用 /admin.html 后台
 const SHIFT_START = process.env.SHIFT_START || '6:00';
+const SHIFT_TZ = process.env.SHIFT_TZ || 'Asia/Shanghai'; // 结算时区，默认北京时间
 
 const app = express();
 app.disable('x-powered-by');
@@ -63,9 +64,11 @@ app.get('/api/status', (_req, res) => {
   res.json({ needAccessCode: !!ACCESS_CODE, aiConfigured: !!cfg.apiKey || process.env.AI_MOCK === '1', model: cfg.model, shiftStart: SHIFT_START });
 });
 
-async function recognizeImages(images) {
+async function recognizeImages(images, job) {
   const raw = await ai.recognize(config.load(), images);
-  const data = Production.normalize(raw, { shiftStart: SHIFT_START });
+  // 统计时间段按提交时间自动生成，不依赖纸上是否写日期
+  const period = Production.shiftPeriod(job.createdAt, { tz: SHIFT_TZ, shiftStart: SHIFT_START });
+  const data = Production.normalize(raw, { shiftStart: SHIFT_START, period });
   return {
     text: Production.format(data),
     data,
