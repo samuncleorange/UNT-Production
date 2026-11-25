@@ -117,3 +117,11 @@ test('型号照原样保留，不进核对区', () => {
   const back = P.parseText(P.format(data)).data.machines[0].lots.map((l) => l.model);
   assert.deepStrictEqual(back, ['B319-6', 'B319-8', 'B12345', '']);
 });
+
+test('extractJson 容忍字符串内的换行/制表符、行尾注释和多余逗号', () => {
+  const raw = '{\n  "period": "",\n  "machines": [\n    { "machine": "7", "uncertain": [], // 注释\n      "note": "第一行\n第二行\t尾",\n      "lots": [ { "lot": "BE2751", "qty": 11, "model": "http://x", "uncertain": [], "note": "", }, ]\n    }\n  ],\n  "paper_total": null\n}';
+  const r = extractJson(raw);
+  assert.strictEqual(r.machines[0].note, '第一行\n第二行\t尾');
+  assert.strictEqual(r.machines[0].lots[0].model, 'http://x');
+  assert.strictEqual(r.machines[0].lots.length, 1);
+});
